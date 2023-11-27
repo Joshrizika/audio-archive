@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+cd `dirname $0`
+
+npm run db:push && npm run typecheck && npm run lint && echo && echo ALL CHECKS ARE PASSING!!! && echo
