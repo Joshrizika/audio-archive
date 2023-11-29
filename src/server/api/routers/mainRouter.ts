@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import jwt from "jsonwebtoken";
-import { serialize } from "cookie";
-import { env } from '~/env';
+import generateRandomString from "~/lib/generateRandomString";
+import getUserByAuthToken from "~/lib/getUserByAuthToken";
 
 // user `query` for read-only requests, and `mutation` for write requests
 
@@ -50,7 +49,7 @@ export const mainRouter = createTRPCRouter({
         password: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       // Attempt to find a user with the provided username and password
       const user = await db.user.findFirst({
         where: {
@@ -61,31 +60,62 @@ export const mainRouter = createTRPCRouter({
 
       // Check if a user was found with the provided credentials
       if (user) {
-        // Create a JWT token that expires in 1 day
-        const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, {
-          expiresIn: "1d",
+        // generate new auth token from 256 random bytes
+        const newAuthToken = generateRandomString();
+
+        // save the auth token in the database
+        await db.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            authToken: newAuthToken,
+          },
         });
 
-        // Serialize the cookie
-        const cookie = serialize("authToken", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 60 * 60 * 24, // 1 day
-          sameSite: "lax", // or 'strict'
-          path: "/",
-        });
-
-        ctx.res.setHeader("Set-Cookie", cookie);
-
-        // A user with the provided credentials exists
         return {
-          success: true,
+          success: true as const,
+          authToken: newAuthToken,
         };
       } else {
         // No user found, or password does not match
         return {
-          success: false,
+          success: false as const,
         };
       }
+    }),
+  // take the authToken and return boolean to indicate whether it's currently valid
+  checkLogin: publicProcedure
+    .input(z.object({ authToken: z.string() }))
+    .query(async function ({ input }) {
+      const user = await getUserByAuthToken(input.authToken);
+      if (user) {
+        return {
+          isValid: true,
+        };
+      } else {
+        return {
+          isValid: false,
+        };
+      }
+    }),
+  // logout mutation that removes the auth token (and sets it back to null)
+  logout: publicProcedure
+    .input(z.object({ authToken: z.string() }))
+    .mutation(async function ({ input }) {
+      const user = await getUserByAuthToken(input.authToken);
+      if (user) {
+        await db.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            authToken: null,
+          },
+        });
+      }
+      return {
+        success: true,
+      };
     }),
 });

@@ -15,7 +15,8 @@ model User {
   username  String      @unique
   password  String
   createdAt DateTime    @default(now())
-  
+  authToken String?
+
   audioFile AudioFile[]
 }
 

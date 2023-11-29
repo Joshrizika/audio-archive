@@ -4,10 +4,15 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import { api } from "~/trpc/react";
+import { useCookies } from "react-cookie";
 
 export default function LoginPage() {
   const loginMutation = api.main.login.useMutation();
   const router = useRouter();
+
+  // cookies set up based on https://www.npmjs.com/package/react-cookie
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +33,15 @@ export default function LoginPage() {
     if (!res.success) {
       toast.error("Invalid login credentials, please try again");
     } else {
+      const authToken = res.authToken;
+
+      // use react-cookie to store the new auth token
+      setCookie("authToken", authToken, {
+        path: "/",
+        // cookie should last 1 year
+        maxAge: 60 * 60 * 24 * 365,
+      });
+
       toast.success("Logged in successfully, taking you to the home page");
 
       // wait 1 second before redirecting to the login page
