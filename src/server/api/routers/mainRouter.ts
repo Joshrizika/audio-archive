@@ -23,22 +23,26 @@ export const mainRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      const newAuthToken = generateRandomString();
       try {
         await db.user.create({
           data: {
             username: input.username,
             password: input.password,
+            authToken: newAuthToken,
           },
         });
+        
       } catch (error) {
         return {
-          success: false,
+          success: false as const,
         };
       }
 
       // return the fact that the account was created
       return {
-        success: true,
+        success: true as const,
+        authToken: newAuthToken,
       };
     }),
 

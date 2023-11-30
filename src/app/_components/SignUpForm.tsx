@@ -4,10 +4,15 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import { api } from "~/trpc/react";
+import { useCookies } from "react-cookie";
 
 export default function SignUpForm() {
   const createNewAccountMutation = api.main.createNewAccount.useMutation();
   const router = useRouter();
+
+  // cookies set up based on https://www.npmjs.com/package/react-cookie
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
 
   // submit handler
   const handleSignUpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -31,16 +36,25 @@ export default function SignUpForm() {
       // error creating new account, let's show a toast saying to use a unique username
       toast.error("Username already taken, please try another one");
     } else {
+      const authToken = res.authToken;
+
+      // use react-cookie to store the new auth token
+      setCookie("authToken", authToken, {
+        path: "/",
+        // cookie should last 1 day
+        maxAge: 60 * 60 * 24,
+      });
+
       // username was created successfully, let's show a toast saying to log in
       toast.success(
-        "Account created successfully, taking you to the login page",
+        "Account created successfully, taking you home",
       );
 
       // wait 1 second before redirecting to the login page
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // then do the redirect
-      router.push("/login");
+      router.push("/");
     }
   };
 
