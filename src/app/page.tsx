@@ -10,11 +10,41 @@ export default function Home() {
     authToken: typeof cookies.authToken === "string" ? cookies.authToken : "",
   });
 
-  if (!checkLoginQuery.data) {
-    return <p>Loading...</p>;
+  const logoutMutation = api.main.logout.useMutation();
+
+  const handleLogout = async () => {
+    try {
+      // Call the logout mutation
+      logoutMutation.mutate({ authToken: cookies.authToken });
+
+      // Remove the cookie
+      removeCookie('authToken');
+
+      // Redirect to the login page or refresh the page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Logout failed. Please try again.');
+    }
+  };
+
+  if (checkLoginQuery.isError) {
+    alert(`Error: ${JSON.stringify(checkLoginQuery.error)}`);
+    return <p>Error!</p>;
+  }
+
+  if (checkLoginQuery.isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-purple-500"></div>
+  </div>;
+  }
+
+  if (!checkLoginQuery.isFetched) {
+    return <p>Not fetched yet</p>;
   }
 
   const isLoggedIn = checkLoginQuery.data.isValid;
+  const user = checkLoginQuery.data.user;
 
   return (
     <>
@@ -36,10 +66,10 @@ export default function Home() {
                 Upload Audio
               </a>
               <a
-                href="/account"
+              onClick={handleLogout}
                 className="mx-2 rounded bg-purple-500 px-4 py-2 font-bold text-white hover:bg-purple-700"
               >
-                Account
+                Log Out
               </a>
             </div>{" "}
           </>
@@ -64,8 +94,10 @@ export default function Home() {
       </nav>
 
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        isLoggedIn: {isLoggedIn ? "true" : "false"}
-        // Existing content
+        {isLoggedIn && (
+          <h1>Welcome {user.username}!</h1>
+         )}
+        
         <h1 className="mb-4 text-3xl font-bold">Home</h1>
         <p className="mb-4">
           This is the home page. You can view audio files you have uploaded.

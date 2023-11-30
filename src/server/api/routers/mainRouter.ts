@@ -92,6 +92,7 @@ export const mainRouter = createTRPCRouter({
       if (user) {
         return {
           isValid: true,
+          user: user,
         };
       } else {
         return {
