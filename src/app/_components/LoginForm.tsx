@@ -10,8 +10,6 @@ export default function LoginForm() {
   const loginMutation = api.main.login.useMutation();
   const router = useRouter();
 
-  console.log("inside LoginForm");
-
   // cookies set up based on https://www.npmjs.com/package/react-cookie
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);

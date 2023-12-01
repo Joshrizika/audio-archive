@@ -6,15 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int         @id @default(autoincrement())
-  username  String      @unique
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
   password  String
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
   authToken String?
 
   audioFile AudioFile[]
@@ -22,6 +22,8 @@ model User {
 
 model AudioFile {
   id        Int      @id @default(autoincrement())
+  fileName  String
+  fileSize  Int
   filePath  String
   createdAt DateTime @default(now())
   userId    Int

@@ -3,6 +3,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import generateRandomString from "~/lib/generateRandomString";
 import getUserByAuthToken from "~/lib/getUserByAuthToken";
+import * as fs from 'fs';
 
 // user `query` for read-only requests, and `mutation` for write requests
 
@@ -32,7 +33,6 @@ export const mainRouter = createTRPCRouter({
             authToken: newAuthToken,
           },
         });
-        
       } catch (error) {
         return {
           success: false as const,
@@ -116,6 +116,40 @@ export const mainRouter = createTRPCRouter({
           },
           data: {
             authToken: null,
+          },
+        });
+      }
+      return {
+        success: true,
+      };
+    }),
+
+  //upload mutation that that takes in a file and saves it to the database
+  upload: publicProcedure
+    .input(z.object({ authToken: z.string(), filePath: z.string(), base64file: z.string(), fileName: z.string(), fileSize: z.number() }))
+    .mutation(async function ({ input }) {
+      console.log('authToken', input.authToken);
+      console.log('filePath', input.filePath);
+      console.log('fileName', input.fileName);
+      console.log('fileSize', input.fileSize);      
+      
+      const file: Buffer = Buffer.from(input.base64file, 'base64');
+      fs.writeFile(input.filePath, file, (err: NodeJS.ErrnoException | null) => {
+        if (err) {
+          console.error('Error writing file:', err);
+        } else {
+          console.log('File saved successfully');
+        }
+      });
+      
+      const user = await getUserByAuthToken(input.authToken);
+      if (user) {
+        await db.audioFile.create({
+          data: {
+            fileName: input.fileName,
+            fileSize: input.fileSize,
+            filePath: input.filePath,
+            userId: user.id,
           },
         });
       }

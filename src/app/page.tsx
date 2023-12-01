@@ -2,8 +2,12 @@
 
 import { useCookies } from "react-cookie";
 import { api } from "~/trpc/react";
+import { z } from "zod";
+
 
 export default function Home() {
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
 
   const checkLoginQuery = api.main.checkLogin.useQuery({
@@ -15,7 +19,8 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       // Call the logout mutation
-      logoutMutation.mutate({ authToken: cookies.authToken });
+      const authToken = z.string().parse(cookies.authToken);
+      logoutMutation.mutate({ authToken: authToken });
 
       // Remove the cookie
       removeCookie('authToken');
@@ -49,9 +54,10 @@ export default function Home() {
   return (
     <>
       <nav className="flex items-center justify-between bg-gradient-to-r from-[#2e026d] to-[#15162c] px-8 py-4 text-white">
+      <div className="text-xl font-bold">Audio Archive</div>
         {isLoggedIn && (
           <>
-            <div className="text-xl font-bold">Audio Archive</div>
+            
             <div>
               <a
                 href="/"
@@ -94,7 +100,7 @@ export default function Home() {
       </nav>
 
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        {isLoggedIn && (
+        {isLoggedIn && user && (
           <h1>Welcome {user.username}!</h1>
          )}
         
