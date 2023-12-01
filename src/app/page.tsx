@@ -3,10 +3,9 @@
 import { useCookies } from "react-cookie";
 import { api } from "~/trpc/react";
 import { z } from "zod";
-
+import AudioForm from "~/app/_components/AudioForm";
 
 export default function Home() {
-
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
 
@@ -23,13 +22,13 @@ export default function Home() {
       logoutMutation.mutate({ authToken: authToken });
 
       // Remove the cookie
-      removeCookie('authToken');
+      removeCookie("authToken");
 
       // Redirect to the login page or refresh the page
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (error) {
-      console.error('Logout failed:', error);
-      alert('Logout failed. Please try again.');
+      console.error("Logout failed:", error);
+      alert("Logout failed. Please try again.");
     }
   };
 
@@ -39,9 +38,11 @@ export default function Home() {
   }
 
   if (checkLoginQuery.isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-purple-500"></div>
-  </div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-16 w-16 animate-spin rounded-full border-t-4 border-purple-500"></div>
+      </div>
+    );
   }
 
   if (!checkLoginQuery.isFetched) {
@@ -54,10 +55,9 @@ export default function Home() {
   return (
     <>
       <nav className="flex items-center justify-between bg-gradient-to-r from-[#2e026d] to-[#15162c] px-8 py-4 text-white">
-      <div className="text-xl font-bold">Audio Archive</div>
+        <div className="text-xl font-bold">Audio Archive</div>
         {isLoggedIn && (
           <>
-            
             <div>
               <a
                 href="/"
@@ -72,7 +72,7 @@ export default function Home() {
                 Upload Audio
               </a>
               <a
-              onClick={handleLogout}
+                onClick={handleLogout}
                 className="mx-2 rounded bg-purple-500 px-4 py-2 font-bold text-white hover:bg-purple-700"
               >
                 Log Out
@@ -100,14 +100,13 @@ export default function Home() {
       </nav>
 
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        {isLoggedIn && user && (
-          <h1>Welcome {user.username}!</h1>
-         )}
-        
         <h1 className="mb-4 text-3xl font-bold">Home</h1>
-        <p className="mb-4">
-          This is the home page. You can view audio files you have uploaded.
-        </p>
+        {isLoggedIn && user && (
+          <>
+            <h1>Welcome {user.username}!</h1>
+            <AudioForm />
+          </>
+        )}
       </main>
     </>
   );
