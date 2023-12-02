@@ -186,9 +186,33 @@ export const mainRouter = createTRPCRouter({
             userId: user.id,
           },
         });
+        const filePaths = files.map((file) => file.filePath);
+
+        const fileDataPromises = filePaths.map((filePath) => {
+          return new Promise<string>((resolve, reject) => {
+            fs.readFile(filePath, (err, data) => {
+              if (err) {
+                reject(err);
+              } else {
+                const base64String = data.toString("base64");
+                resolve(base64String);
+              }
+            });
+          });
+        });
+
+        const fileData = await Promise.all(fileDataPromises);
+        console.log("fileData", files);
+
+        // Add fileData to files
+        const filesWithData = files.map((file, index) => ({
+          ...file,
+          fileData: fileData[index],
+        }));
+
         return {
           success: true as const,
-          files: files,
+          files: filesWithData,
         };
       } else {
         // No user found
