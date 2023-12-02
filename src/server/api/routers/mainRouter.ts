@@ -221,4 +221,29 @@ export const mainRouter = createTRPCRouter({
         };
       }
     }),
+  deleteAudio: publicProcedure
+    .input(
+      z.object({
+        fileId: z.number(),
+        filePath: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      fs.unlink(input.filePath, (err) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+      });
+
+      await db.audioFile.delete({
+        where: {
+          id: input.fileId,
+        },
+      });
+
+      return {
+        success: true as const,
+      };
+    }),
 });

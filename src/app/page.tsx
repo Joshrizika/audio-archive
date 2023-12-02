@@ -4,6 +4,8 @@ import { useCookies } from "react-cookie";
 import { api } from "~/trpc/react";
 import { z } from "zod";
 import AudioForm from "~/app/_components/AudioForm";
+import toast from "react-hot-toast";
+
 
 export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -26,16 +28,13 @@ export default function Home() {
 
       // Redirect to the login page or refresh the page
       window.location.href = "/";
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error("Logout failed:", error);
-      alert("Logout failed. Please try again.");
+      toast.error("Logout failed. Please try again.");
     }
   };
-
-  if (checkLoginQuery.isError) {
-    alert(`Error: ${JSON.stringify(checkLoginQuery.error)}`);
-    return <p>Error!</p>;
-  }
+  
 
   if (checkLoginQuery.isLoading) {
     return (
@@ -43,6 +42,11 @@ export default function Home() {
         <div className="h-16 w-16 animate-spin rounded-full border-t-4 border-purple-500"></div>
       </div>
     );
+  }
+
+  if (checkLoginQuery.isError) {
+    alert(`Error: ${JSON.stringify(checkLoginQuery.error)}`);
+    return <p>Error!</p>;
   }
 
   if (!checkLoginQuery.isFetched) {
@@ -80,7 +84,6 @@ export default function Home() {
             </div>{" "}
           </>
         )}
-        {/* show login options if user is not logged in */}
         {!isLoggedIn && (
           <div>
             <a
@@ -99,12 +102,17 @@ export default function Home() {
         )}
       </nav>
 
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <h1 className="mb-4 text-3xl font-bold">Home</h1>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white pt-10">
+      <h1 className="mb-4 text-3xl font-bold">Audio Files</h1>
         {isLoggedIn && user && (
           <>
-            <h1>Welcome {user.username}!</h1>
+            <h1>Welcome {user.username}! Here are your saved audio files.</h1>
             <AudioForm />
+          </>
+        )}
+        {!isLoggedIn && (
+          <>
+            <h1>Log in to view your audio files.</h1>{" "}
           </>
         )}
       </main>
