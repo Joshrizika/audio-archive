@@ -229,21 +229,24 @@ export const mainRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      fs.unlink(input.filePath, (err) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-      });
+      try {
+        // First, delete the database record
+        await db.audioFile.delete({
+          where: {
+            id: input.fileId,
+          },
+        });
 
-      await db.audioFile.delete({
-        where: {
-          id: input.fileId,
-        },
-      });
+        // Then, delete the file from the filesystem
+        await fs.promises.unlink(input.filePath);
 
-      return {
-        success: true as const,
-      };
+        return {
+          success: true as const,
+        };
+      } catch (err) {
+        console.error(err);
+        // Communicate the error back to the client
+        throw new Error("Error deleting audio file");
+      }
     }),
 });
