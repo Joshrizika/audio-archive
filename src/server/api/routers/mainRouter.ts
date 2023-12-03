@@ -249,4 +249,31 @@ export const mainRouter = createTRPCRouter({
         throw new Error("Error deleting audio file");
       }
     }),
+  editAudio: publicProcedure
+    .input(
+      z.object({
+        fileId: z.number(),
+        fileName: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        await db.audioFile.update({
+          where: {
+            id: input.fileId,
+          },
+          data: {
+            fileName: input.fileName,
+          },
+        });
+
+        return {
+          success: true as const,
+        };
+      } catch (err) {
+        console.error(err);
+        // Communicate the error back to the client
+        throw new Error("Error editing audio file");
+      }
+    }),
 });

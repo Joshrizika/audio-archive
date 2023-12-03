@@ -14,17 +14,20 @@ interface FileData {
   id: number;
   userId: number;
   fileData?: string;
+  isEditing?: boolean;
 }
 
 export default function AudioForm() {
   const audioMutation = api.main.audio.useMutation();
   const deleteAudioMutation = api.main.deleteAudio.useMutation();
+  const editAudioMutation = api.main.editAudio.useMutation();
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
   const authToken = z.string().parse(cookies.authToken);
 
   const [files, setFiles] = useState<FileData[]>([]);
+  const [updatedName, setUpdatedName] = useState<string>(""); // State to store the updated file name
 
   function base64ToBlobUrl(
     base64: string | undefined,
@@ -113,29 +116,83 @@ export default function AudioForm() {
     });
   }
 
+  const toggleEditing = (fileId: number, currentName: string) => {
+    const nameWithoutExtension = currentName.replace(/\.mp3$/, "");
+
+    // Exit edit mode for any file that is currently being edited
+    // and enter edit mode for the clicked file
+    setFiles((currentFiles) =>
+      currentFiles.map((file) => {
+        if (file.id === fileId) {
+          // Toggle the isEditing state for the clicked file
+          return { ...file, isEditing: !file.isEditing };
+        } else {
+          // Make sure no other file is in editing mode
+          return { ...file, isEditing: false };
+        }
+      }),
+    );
+
+    // If the clicked file is not currently being edited, set its name to the state
+    if (!files.find((file) => file.id === fileId)?.isEditing) {
+      setUpdatedName(nameWithoutExtension);
+    }
+  };
+
+  const handleNameChange = async (fileId: number) => {
+    const newNameWithExtension = `${updatedName}.mp3`;
+    try {
+      // Await the API call
+      const response = await editAudioMutation.mutateAsync({
+        fileId: fileId,
+        fileName: newNameWithExtension,
+      });
+      if (response.success) {
+        setFiles((prevFiles) =>
+          prevFiles.map((file) =>
+            file.id === fileId
+              ? { ...file, fileName: updatedName, isEditing: false }
+              : file,
+          ),
+        );
+      } else {
+        toast.error("Failed to update the file name.");
+      }
+    } catch (error) {
+      console.error("Error editing file name:", error);
+      toast.error("Failed to update the file name.");
+    }
+
+    // Update the isEditing state regardless of success or failure
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.id === fileId
+          ? { ...file, isEditing: false, fileName: newNameWithExtension }
+          : file,
+      ),
+    );
+  };
+
   useEffect(() => {
     // Perform the mutation inside useEffect
     audioMutation
-      .mutateAsync({
-        authToken: authToken,
-      })
+      .mutateAsync({ authToken: authToken })
       .then((res) => {
-        if (!res.success) {
-          // Handle error
-          console.error("Mutation was not successful");
-        } else {
+        if (res.success) {
           const formattedFiles = res.files.map((file) => ({
             ...file,
-            createdAt: formatDate(file.createdAt.toString()), // Convert Date to string
+            createdAt: formatDate(file.createdAt.toString()),
             fileData: file.fileData
               ? base64ToBlobUrl(file.fileData, "audio/wav")
               : undefined,
+            isEditing: false, // Set isEditing to false initially
           }));
           setFiles(formattedFiles);
+        } else {
+          console.error("Mutation was not successful");
         }
       })
       .catch((error) => {
-        // Handle error
         console.error("Error during mutation:", error);
       });
   }, [authToken]);
@@ -145,13 +202,55 @@ export default function AudioForm() {
       {files.map((file) => (
         <div
           key={file.id}
-          className="mb-4 flex flex-col items-center justify-between rounded-lg border border-white/10 bg-white/10 p-4 shadow-lg backdrop-blur-md md:flex-row md:items-center"
+          className="mb-4 flex flex-col justify-between rounded-lg border border-white/10 bg-white/10 p-4 shadow-lg md:flex-row md:items-center"
         >
-          <div className="text-center md:text-left">
-            <div className="mb-2 text-lg font-semibold text-white">
-              {file.fileName}
+          <div className="flex flex-col items-center md:items-start">
+            <div className="mb-2">
+              {file.isEditing ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleNameChange(file.id)
+                      .then(() => {
+                        toast.success("File name updated successfully");
+                      })
+                      .catch((error) => {
+                        console.error("Error updating file name:", error);
+                      });
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={updatedName}
+                    onChange={(e) => setUpdatedName(e.target.value)}
+                    className="mr-2 text-lg font-semibold text-black"
+                  />
+                  <button
+                    type="submit"
+                    className="ml-2 rounded bg-yellow-500 px-3 py-1 text-center text-xs text-white hover:bg-yellow-700"
+                  >
+                    Save
+                  </button>
+                </form>
+              ) : (
+                <div className="flex items-center">
+                  <div className="text-lg font-semibold text-white">
+                    {file.fileName}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUpdatedName(file.fileName.replace(/\.mp3$/, "")); // Initialize the temporary state with the current file name
+                      toggleEditing(file.id, file.fileName); // Enter edit mode
+                    }}
+                    className="ml-2 rounded bg-yellow-500 px-3 py-1 text-center text-xs text-white hover:bg-yellow-700"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="mb-1 text-sm text-gray-300">
+
+            <div className="text-sm text-gray-300">
               <strong>Size:</strong> {formatFileSize(file.fileSize)}
             </div>
             <div className="text-sm text-gray-300">
@@ -159,26 +258,26 @@ export default function AudioForm() {
             </div>
           </div>
 
-          <div className="mt-2 flex flex-col items-center md:mt-0 md:flex-row md:space-x-2">
+          <div className="mt-4 flex flex-col items-center md:mt-0 md:flex-row md:space-x-2">
             <audio
               controls
               title={file.fileName}
               controlsList="nodownload"
-              className="mb-2 rounded-lg bg-white/50 p-2 md:mb-0"
+              className="rounded-lg bg-white/50 p-2"
             >
               <source src={file.fileData} type="audio/mpeg" />
             </audio>
 
-            <div className="flex flex-col items-center space-y-2 md:items-start">
+            <div className="mt-2 flex flex-col items-center space-y-2 md:mt-0">
               <button
                 onClick={() => handleDownload(file.fileData, file.fileName)}
-                className="rounded bg-blue-500 px-3 py-1 text-center text-xs text-white hover:bg-blue-700 md:min-w-[100px]"
+                className="rounded bg-blue-500 px-3 py-1 text-center text-xs text-white hover:bg-blue-700"
               >
                 Download
               </button>
               <button
                 onClick={() => handleDelete(file.id, file.filePath)}
-                className="rounded bg-red-500 px-3 py-1 text-center text-xs text-white hover:bg-red-700 md:min-w-[100px]"
+                className="rounded bg-red-500 px-3 py-1 text-center text-xs text-white hover:bg-red-700"
               >
                 Delete
               </button>
