@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+
 interface FileData {
   createdAt: string;
   fileName: string;
@@ -19,6 +20,7 @@ interface FileData {
 export default function AudioForm() {
   const audioMutation = api.main.audio.useMutation();
   const deleteAudioMutation = api.main.deleteAudio.useMutation();
+
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
@@ -56,21 +58,25 @@ export default function AudioForm() {
   }
 
   function handleDelete(id: number, filePath: string) {
-    try {
-      // Call the delete mutation
-      deleteAudioMutation.mutate({
-        fileId: id,
-        filePath: filePath,
-      });
+    deleteAudioMutation.mutate({
+      fileId: id,
+      filePath: filePath,
+    }, {
+      onSuccess: () => {
+        // Handle success
+        setFiles(currentFiles => currentFiles.filter(file => file.id !== id));
+        toast.success("File deleted successfully");
 
-      toast.success("File deleted successfully");
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Delete failed:", error);
-      toast.error("Delete failed. Please try again.")
-    }
+      },
+      onError: (error) => {
+        // Handle error
+        console.error("Delete failed:", error);
+        toast.error("Delete failed. Please try again.");
+      }
+    });
   }
-
+  
+  
   function formatFileSize(bytes: number): string {
     if (bytes < 1000) return bytes + " bytes";
     else if (bytes < 1000000) return (bytes / 1000).toFixed(1) + " KB";

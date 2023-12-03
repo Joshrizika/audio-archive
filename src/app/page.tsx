@@ -5,9 +5,12 @@ import { api } from "~/trpc/react";
 import { z } from "zod";
 import AudioForm from "~/app/_components/AudioForm";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+
 
 
 export default function Home() {
+  const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
 
@@ -17,26 +20,33 @@ export default function Home() {
 
   const logoutMutation = api.main.logout.useMutation();
 
-  const handleLogout = async () => {
-    try {
-      // Call the logout mutation
-      const authToken = z.string().parse(cookies.authToken);
-      logoutMutation.mutate({ authToken: authToken });
-
-      // Remove the cookie
-      removeCookie("authToken");
-
-      // Redirect to the login page or refresh the page
-      window.location.href = "/";
-      toast.success("Logged out successfully");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      toast.error("Logout failed. Please try again.");
-    }
+  const handleLogout = () => {
+    // Call the logout mutation
+    const authToken = z.string().parse(cookies.authToken);
+  
+    logoutMutation.mutate({ authToken: authToken }, {
+      onSuccess: () => {
+        // Remove the cookie
+        removeCookie("authToken");
+  
+        // Display success message
+        toast.success("Logged out successfully");
+  
+        // Redirect to the login page
+        router.push("/"); // Assuming you have the router from `useRouter`
+      },
+      onError: (error) => {
+        // Handle error
+        console.error("Logout failed:", error);
+        toast.error("Logout failed. Please try again.");
+      }
+    });
   };
+  
   
 
   if (checkLoginQuery.isLoading) {
+    console.log("checkLoginQuery from isLoading", checkLoginQuery);
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-16 w-16 animate-spin rounded-full border-t-4 border-purple-500"></div>
@@ -45,11 +55,14 @@ export default function Home() {
   }
 
   if (checkLoginQuery.isError) {
+    console.log("checkLoginQuery from isError", checkLoginQuery);
+
     alert(`Error: ${JSON.stringify(checkLoginQuery.error)}`);
     return <p>Error!</p>;
   }
 
   if (!checkLoginQuery.isFetched) {
+    console.log("checkLoginQuery from isFetched", checkLoginQuery);
     return <p>Not fetched yet</p>;
   }
 
