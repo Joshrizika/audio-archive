@@ -6,7 +6,6 @@ import { z } from "zod";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-
 interface FileData {
   createdAt: string;
   fileName: string;
@@ -20,7 +19,6 @@ interface FileData {
 export default function AudioForm() {
   const audioMutation = api.main.audio.useMutation();
   const deleteAudioMutation = api.main.deleteAudio.useMutation();
-
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
@@ -58,25 +56,28 @@ export default function AudioForm() {
   }
 
   function handleDelete(id: number, filePath: string) {
-    deleteAudioMutation.mutate({
-      fileId: id,
-      filePath: filePath,
-    }, {
-      onSuccess: () => {
-        // Handle success
-        setFiles(currentFiles => currentFiles.filter(file => file.id !== id));
-        toast.success("File deleted successfully");
-
+    deleteAudioMutation.mutate(
+      {
+        fileId: id,
+        filePath: filePath,
       },
-      onError: (error) => {
-        // Handle error
-        console.error("Delete failed:", error);
-        toast.error("Delete failed. Please try again.");
-      }
-    });
+      {
+        onSuccess: () => {
+          // Handle success
+          setFiles((currentFiles) =>
+            currentFiles.filter((file) => file.id !== id),
+          );
+          toast.success("File deleted successfully");
+        },
+        onError: (error) => {
+          // Handle error
+          console.error("Delete failed:", error);
+          toast.error("Delete failed. Please try again.");
+        },
+      },
+    );
   }
-  
-  
+
   function formatFileSize(bytes: number): string {
     if (bytes < 1000) return bytes + " bytes";
     else if (bytes < 1000000) return (bytes / 1000).toFixed(1) + " KB";
@@ -102,13 +103,13 @@ export default function AudioForm() {
 
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   }
 
@@ -144,9 +145,9 @@ export default function AudioForm() {
       {files.map((file) => (
         <div
           key={file.id}
-          className="mb-4 flex flex-col items-start justify-between rounded-lg border border-white/10 bg-white/10 p-4 shadow-lg backdrop-blur-md md:flex-row md:items-center"
+          className="mb-4 flex flex-col items-center justify-between rounded-lg border border-white/10 bg-white/10 p-4 shadow-lg backdrop-blur-md md:flex-row md:items-center"
         >
-          <div className="flex-grow">
+          <div className="text-center md:text-left">
             <div className="mb-2 text-lg font-semibold text-white">
               {file.fileName}
             </div>
@@ -168,19 +169,18 @@ export default function AudioForm() {
               <source src={file.fileData} type="audio/mpeg" />
             </audio>
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col items-center space-y-2 md:items-start">
               <button
-                onClick={() => handleDelete(file.id, file.filePath)}
-                className="rounded bg-red-500 px-3 py-1 text-center text-xs text-white hover:bg-red-700" // Shrunk horizontally with px-3
-              >
-                Delete
-              </button>
-
-              <button
-                onClick={() => handleDownload(file.fileData, file.fileName)} // Implement your download logic
-                className="rounded bg-blue-500 px-3 py-1 text-center text-xs text-white hover:bg-blue-700" // Shrunk horizontally with px-3
+                onClick={() => handleDownload(file.fileData, file.fileName)}
+                className="rounded bg-blue-500 px-3 py-1 text-center text-xs text-white hover:bg-blue-700 md:min-w-[100px]"
               >
                 Download
+              </button>
+              <button
+                onClick={() => handleDelete(file.id, file.filePath)}
+                className="rounded bg-red-500 px-3 py-1 text-center text-xs text-white hover:bg-red-700 md:min-w-[100px]"
+              >
+                Delete
               </button>
             </div>
           </div>
