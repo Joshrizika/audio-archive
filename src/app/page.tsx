@@ -7,8 +7,6 @@ import AudioForm from "~/app/_components/AudioForm";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-
-
 export default function Home() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -23,27 +21,28 @@ export default function Home() {
   const handleLogout = () => {
     // Call the logout mutation
     const authToken = z.string().parse(cookies.authToken);
-  
-    logoutMutation.mutate({ authToken: authToken }, {
-      onSuccess: () => {
-        // Remove the cookie
-        removeCookie("authToken");
-  
-        // Display success message
-        toast.success("Logged out successfully");
-  
-        // Redirect to the login page
-        router.push("/"); // Assuming you have the router from `useRouter`
+
+    logoutMutation.mutate(
+      { authToken: authToken },
+      {
+        onSuccess: () => {
+          // Remove the cookie
+          removeCookie("authToken");
+
+          // Display success message
+          toast.success("Logged out successfully");
+
+          // Redirect to the login page
+          router.push("/"); // Assuming you have the router from `useRouter`
+        },
+        onError: (error) => {
+          // Handle error
+          console.error("Logout failed:", error);
+          toast.error("Logout failed. Please try again.");
+        },
       },
-      onError: (error) => {
-        // Handle error
-        console.error("Logout failed:", error);
-        toast.error("Logout failed. Please try again.");
-      }
-    });
+    );
   };
-  
-  
 
   if (checkLoginQuery.isLoading) {
     console.log("checkLoginQuery from isLoading", checkLoginQuery);
@@ -115,8 +114,8 @@ export default function Home() {
         )}
       </nav>
 
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white pt-10">
-      <h1 className="mb-4 text-3xl font-bold">Audio Files</h1>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] pt-10 text-white">
+        <h1 className="mb-4 text-3xl font-bold">Audio Files</h1>
         {isLoggedIn && user && (
           <>
             <h1>Welcome {user.username}! Here are your saved audio files.</h1>
